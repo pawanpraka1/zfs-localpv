@@ -261,8 +261,24 @@ func (cs *controller) DeleteVolume(
 
 	volumeID := req.GetVolumeId()
 
+	snapList, err := zfs.GetVolumeSnap(volumeID)
+
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			"can not delete the volume, get snapshots failed err: %v", err.Error(),
+		)
+	}
+
+	if len(snapList.Items) > 0 {
+		return nil, status.Errorf(
+			codes.Internal,
+			"can not delete the volume, snapshot is present",
+		)
+	}
+
 	// verify if the volume has already been deleted
-	vol, err := zfs.GetVolume(volumeID)
+	vol, err := zfs.GetZFSVolume(volumeID)
 	if vol != nil && vol.DeletionTimestamp != nil {
 		goto deleteResponse
 	}

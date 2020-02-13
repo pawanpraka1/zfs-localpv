@@ -121,11 +121,15 @@ func DeleteSnapshot(snapname string) (err error) {
 	return
 }
 
-// GetVolume the corresponding ZFSVolume CR
-func GetVolume(volumeID string) (*apis.ZFSVolume, error) {
-	return volbuilder.NewKubeclient().
+// GetVolumeSnap returns the all the Snapshots for the given volume
+func GetVolumeSnap(volumeID string) (*apis.ZFSSnapshotList, error) {
+	listOptions := v1.ListOptions{
+		LabelSelector: ZFSVolKey + "=" + volumeID,
+	}
+
+	return snapbuilder.NewKubeclient().
 		WithNamespace(OpenEBSNamespace).
-		Get(volumeID, metav1.GetOptions{})
+		List(listOptions)
 }
 
 // DeleteVolume deletes the corresponding ZFSVol CR
