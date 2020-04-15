@@ -139,13 +139,10 @@ func DeleteVolume(volumeID string) (err error) {
 }
 
 // GetVolList fetches the current Published Volume list
-func GetVolList(volumeID string) (*apis.ZFSVolumeList, error) {
-	listOptions := v1.ListOptions{
-		LabelSelector: ZFSNodeKey + "=" + NodeID,
-	}
+func GetVolList() (*apis.ZFSVolumeList, error) {
 
 	return volbuilder.NewKubeclient().
-		WithNamespace(OpenEBSNamespace).List(listOptions)
+		WithNamespace(OpenEBSNamespace).List(v1.ListOptions{})
 
 }
 

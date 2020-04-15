@@ -492,12 +492,41 @@ func (cs *controller) GetCapacity(
 // ListVolumes lists all the volumes
 //
 // This implements csi.ControllerServer
+// A Controller Plugin MUST implement this RPC call if it has LIST_VOLUMES capability.
+// The Plugin SHALL return the information about all the volumes that it knows about.
+// If volumes are created and/or deleted while the CO is concurrently paging through
+// ListVolumes results then it is possible that the CO MAY either witness duplicate
+// volumes in the list, not witness existing volumes, or both. The CO SHALL NOT expect
+// a consistent "view" of all volumes when paging through the volume list via multiple
+// calls to ListVolumes.
 func (cs *controller) ListVolumes(
 	ctx context.Context,
 	req *csi.ListVolumesRequest,
 ) (*csi.ListVolumesResponse, error) {
 
-	return nil, status.Error(codes.Unimplemented, "")
+	volList, err := zfs.GetVolList()
+
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			"List volume: failed to get volume list %s", err.Error())
+	}
+
+	entries := []*csi.ListVolumesResponse_Entry{}
+
+	for _, item := range volList.Items {
+		entries = append(entries, &csi.ListVolumesResponse_Entry{
+			Volume: &csi.Volume{
+				VolumeId: item.Name,
+			},
+		})
+	}
+
+	logrus.Infof("List volume num volumes = %v", len(volList.Items))
+
+	return &csi.ListVolumesResponse{
+		Entries: entries,
+	}, nil
 }
 
 // validateCapabilities validates if provided capabilities
@@ -568,6 +597,7 @@ func newControllerCapabilities() []*csi.ControllerServiceCapability {
 		csi.ControllerServiceCapability_RPC_CREATE_DELETE_SNAPSHOT,
 		csi.ControllerServiceCapability_RPC_CLONE_VOLUME,
 		csi.ControllerServiceCapability_RPC_EXPAND_VOLUME,
+		csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
 	} {
 		capabilities = append(capabilities, fromType(cap))
 	}
