@@ -157,7 +157,9 @@ func GetZFSVolume(volumeID string) (*apis.ZFSVolume, error) {
 	return vol, err
 }
 
-// GetZFSVolumeStatus returns ZFSVolume status
+// GetZFSVolumeStatus returns ZFSVolume OwnerNode and Status for
+// the given volume. CreateVolume request may call it again and
+// again until status is "Ready".
 func GetZFSVolumeStatus(volID string) (string, string, error) {
 	getOptions := metav1.GetOptions{}
 	vol, err := volbuilder.NewKubeclient().
