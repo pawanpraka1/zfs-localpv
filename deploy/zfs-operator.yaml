@@ -1536,6 +1536,8 @@ apiVersion: apps/v1
 metadata:
   name: openebs-zfs-node
   namespace: kube-system
+  annotations:
+    command: &cmd BIN=`which zfs` && LIB_PATH=/tmp/zfspv/lib && BIN_PATH=/tmp/zfspv/bin && mkdir $LIB_PATH $BIN_PATH && cp $BIN $BIN_PATH && libs=`ldd $BIN | grep -v "linux-vdso.so" | grep -v "ld-linux-x86-64.so" | awk '{print $3}'` && for lib in $libs; do cp $lib $LIB_PATH; done
 spec:
   selector:
     matchLabels:
@@ -1549,6 +1551,19 @@ spec:
       priorityClassName: system-node-critical
       serviceAccount: openebs-zfs-node-sa
       hostNetwork: true
+      initContainers:
+      - name: init-node
+        command:
+          - nsenter
+          - --mount=/proc/1/ns/mnt
+          - --
+          - sh
+          - -c
+          - *cmd
+        image: alpine:3.7
+        securityContext:
+          privileged: true
+      hostPID: true
       containers:
         - name: csi-node-driver-registrar
           image: quay.io/k8scsi/csi-node-driver-registrar:v1.2.0
@@ -1607,18 +1622,8 @@ spec:
               mountPath: /dev
             - name: encr-keys
               mountPath: /home/keys
-            - name: zfs-bin
-              mountPath: /sbin/zfs
-            - name: libzpool
-              mountPath: /lib/libzpool.so.2
-            - name: libzfscore
-              mountPath: /lib/libzfs_core.so.1
-            - name: libzfs
-              mountPath: /lib/libzfs.so.2
-            - name: libuutil
-              mountPath: /lib/libuutil.so.1
-            - name: libnvpair
-              mountPath: /lib/libnvpair.so.1
+            - name: zfspv
+              mountPath: /zfspv
             - name: pods-mount-dir
               mountPath: /var/lib/kubelet/
               # needed so that any mounts setup inside this container are
@@ -1633,30 +1638,10 @@ spec:
           hostPath:
             path: /home/keys
             type: DirectoryOrCreate
-        - name: zfs-bin
+        - name: zfspv
           hostPath:
-            path: /sbin/zfs
-            type: File
-        - name: libzpool
-          hostPath:
-            path: /lib/libzpool.so.2.0.0
-            type: File
-        - name: libzfscore
-          hostPath:
-            path: /lib/libzfs_core.so.1.0.0
-            type: File
-        - name: libzfs
-          hostPath:
-            path: /lib/libzfs.so.2.0.0
-            type: File
-        - name: libuutil
-          hostPath:
-            path: /lib/libuutil.so.1.0.1
-            type: File
-        - name: libnvpair
-          hostPath:
-            path: /lib/libnvpair.so.1.0.1
-            type: File
+            path: /tmp/zfspv
+            type: DirectoryOrCreate
         - name: registration-dir
           hostPath:
             path: /var/lib/kubelet/plugins_registry/

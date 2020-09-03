@@ -35,5 +35,5 @@ LABEL org.label-schema.build-date=$DBUILD_DATE
 LABEL org.label-schema.vcs-url=$DBUILD_REPO_URL
 LABEL org.label-schema.url=$DBUILD_SITE_URL
 
-ENTRYPOINT ["/usr/local/bin/zfs-driver"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 7676 7777
