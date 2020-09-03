@@ -1,14 +1,9 @@
----
-apiVersion: extensions/v1beta1
-kind: DaemonSet
+apiVersion: apps/v1
+rind: DaemonSet
 metadata:
-  namespace: openebs
   name: openebs-amazonlinux-init
-  labels:
-    openebs.io/component-name: openebs-amazonlinux-init
-    openebs.io/version: 1.4.0
   annotations:
-    command: &cmd yum install iscsi-initiator-utils -y && sudo systemctl enable iscsid && sudo systemctl start iscsid
+    command: &cmd BIN=`which zfs` && LIB_PATH=/tmp/host/lib && BIN_PATH=/tmp/host/bin && mkdir -p $LIB_PATH $BIN_PATH && cp $BIN $BIN_PATH && libs=`ldd $BIN | grep -v "linux-vdso.so" | grep -v "ld-linux-x86-64.so" | awk '{print $3}'` && for lib in $libs; do cp $lib $LIB_PATH; done
 spec:
   selector:
     matchLabels:
