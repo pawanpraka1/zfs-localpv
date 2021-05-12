@@ -33,6 +33,9 @@ jobs:
           [ -z "${{ secrets.IMAGE_ORG }}" ] && IMAGE_ORG=openebs || IMAGE_ORG=${{ secrets.IMAGE_ORG}}
           echo "IMAGE_ORG=${IMAGE_ORG}" >> $GITHUB_ENV
 
+      - name : Get branch name
+        uses: nelonoel/branch-name@v1.0.1
+
       - name: Set Tag
         run: |
           TAG="${GITHUB_REF#refs/*/v}"
@@ -58,8 +61,29 @@ jobs:
       
       - name: Print Tag info
         run: |
+          echo "BRANCH: ${BRANCH_NAME} REF: ${GITHUB_REF}"
           echo "${{ steps.docker_meta.outputs.tags }}"
           echo "RELEASE TAG: ${RELEASE_TAG}"
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Update Operator YAML
+        run: |
+          echo "update the operator yaml with the image tag"
+          sed -i 's/zfs-driver:ci/zfs-driver:${RELEASE_TAG}/' deploy/yamls/zfs-driver.yaml
+          sed -i 's/zfs-driver:ci/zfs-driver:${RELEASE_TAG}/' deploy/zfs-operator.yaml
+          sed -i 's/newTag: ci/newTag: ${RELEASE_TAG}/' deploy/yamls/kustomization.yaml
+
+          git diff --quiet deploy/ || CHANGED=$?
+          if [[ $CHANGED -ne 0 ]]; then
+            echo "Commiting operator yaml changes"
+            git add deploy/
+            git commit -s -m 'chore(yaml): updating operator yaml with the image tag'
+            git push origin "${BRANCH_NAME}"
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
