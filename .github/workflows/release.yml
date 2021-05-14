@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       - name: Set Image Org
         # sets the default IMAGE_ORG to openebs
         run: |
@@ -64,12 +64,8 @@ jobs:
           echo "RELEASE TAG: ${RELEASE_TAG}"
           echo "RELEASE BRANCH: ${BRANCH}"
 
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       - name: Update Operator YAML
+        uses: fregante/setup-git-user@v1
         run: |
           echo "update the operator yaml with the image tag"
           sed -i "s/zfs-driver:ci/zfs-driver:${RELEASE_TAG}/" deploy/yamls/zfs-driver.yaml
@@ -81,6 +77,7 @@ jobs:
             echo "Commiting operator yaml changes"
             git add deploy/
             git commit -s -m 'chore(yaml): updating operator yaml with the image tag'
+            git show
             git push origin HEAD:"${BRANCH}"
           fi
 
